@@ -101,3 +101,11 @@ async def test_search_jumps_to_path(sample_hdf5_file: Path) -> None:
         await pilot.pause()
         screen = cast(MainScreen, pilot.app.screen)
         assert screen.current_path == "/group/vector"
+
+
+@pytest.mark.asyncio
+async def test_status_bar_uses_relative_path_for_files_under_cwd(snapshot_hdf5_file: Path) -> None:
+    async with HDF5ViewerApp(snapshot_hdf5_file).run_test() as pilot:
+        await pilot.pause()
+        status_bar = pilot.app.screen.query_one("#status-bar", Static)
+        assert "tests/.snapshot-fixtures/sample.h5" in str(status_bar.content)

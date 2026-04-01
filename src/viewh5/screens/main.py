@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from math import ceil
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 from rich.text import Text
 from textual import on, work
@@ -403,10 +403,10 @@ class MainScreen(Screen[None]):
         summary = self.current_summary
         preview = self.current_preview
         if summary is None:
-            self._set_status(str(self.model.path))
+            self._set_status(self._display_model_path())
             return
         text = Text()
-        text.append(str(self.model.path), style="bold")
+        text.append(self._display_model_path(), style="bold")
         text.append(" | ")
         text.append(summary.path, style="cyan")
         text.append(" | ")
@@ -426,6 +426,12 @@ class MainScreen(Screen[None]):
             else:
                 text.append("metadata only", style="dim")
         self.query_one("#status-bar", Static).update(text)
+
+    def _display_model_path(self) -> str:
+        try:
+            return str(self.model.path.relative_to(Path.cwd()))
+        except ValueError:
+            return str(self.model.path)
 
     def _ancestor_chain(self, path: str) -> list[str]:
         current = PurePosixPath(path)
