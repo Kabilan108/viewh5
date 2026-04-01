@@ -1,3 +1,5 @@
+exclude = { glob = "tests/__snapshots__/test_snapshots/**" }
+
 [[repos]]
 repo = "builtin"
 hooks = [
