@@ -9,6 +9,12 @@ Read-only, keyboard-first HDF5 viewer built with Textual.
 ## Install
 
 ```bash
+uv tool install viewh5
+```
+
+Or install the latest version directly from GitHub:
+
+```bash
 uv tool install --from git+https://github.com/kabilan108/viewh5 viewh5
 ```
 
