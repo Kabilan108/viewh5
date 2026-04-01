@@ -1,6 +1,5 @@
-def main():
-    print("Hello from 2026-04-01-hdf5-viewer!")
+from viewh5.cli import main
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

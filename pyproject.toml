@@ -1,15 +1,34 @@
 [project]
-name = "2026-04-01-hdf5-viewer"
+name = "viewh5"
 version = "0.1.0"
-description = "Add your description here"
+description = "Read-only Textual viewer for HDF5 files"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "textual>=8.2.1",
+    "h5py",
+    "textual>=8.1.1",
 ]
+
+[project.scripts]
+viewh5 = "viewh5.cli:main"
 
 [dependency-groups]
 dev = [
-    "ruff>=0.15.8",
-    "ty>=0.0.27",
+    "ipython-icat>=0.4.1",
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "pytest-textual-snapshot>=1.0.0",
+    "ruff>=0.15.7",
+    "ty>=0.0.25",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/viewh5"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
