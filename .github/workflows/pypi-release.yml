@@ -57,17 +57,9 @@ jobs:
         id: release
         shell: bash
         run: |
+          package_name="viewh5"
           version="$(uv version --short)"
           tag="v${version}"
-          package_name="$(
-            python - <<'PY'
-            import tomllib
-
-            with open("pyproject.toml", "rb") as handle:
-                project = tomllib.load(handle)["project"]
-            print(project["name"])
-            PY
-          )"
 
           if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
             tag_exists=true
