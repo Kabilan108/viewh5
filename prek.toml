@@ -1,0 +1,17 @@
+[[repos]]
+repo = "builtin"
+hooks = [
+  { id = "check-toml", priority = 0 },
+  { id = "check-json", priority = 0 },
+  { id = "check-symlinks", priority = 0 },
+  { id = "check-added-large-files", priority = 0 },
+  { id = "trailing-whitespace", priority = 0 },
+  { id = "end-of-file-fixer", priority = 0 },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "format-py", name = "Format", language = "system", entry = "uv run ruff check --fix", pass_filenames = true, files = "\\.(py|toml)$", priority = 10 },
+  { id = "lint-py", name = "Type Check", language = "system", entry = "uv run ty check", pass_filenames = false, files = "\\.py$", priority = 20 },
+]
