@@ -1,0 +1,123 @@
+name: Publish Python distribution to PyPI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pypi-release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify release candidate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Sync dependencies
+        run: uv sync --group dev
+
+      - name: Lint
+        run: uv run ruff check
+
+      - name: Type check
+        run: uv run ty check
+
+      - name: Test
+        run: uv run pytest
+
+  publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    needs: verify
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Determine release metadata
+        id: release
+        shell: bash
+        run: |
+          version="$(uv version --short)"
+          tag="v${version}"
+          package_name="$(
+            python - <<'PY'
+            import tomllib
+
+            with open("pyproject.toml", "rb") as handle:
+                project = tomllib.load(handle)["project"]
+            print(project["name"])
+            PY
+          )"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            tag_exists=true
+          else
+            tag_exists=false
+          fi
+
+          pypi_status="$(curl -fsS -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/${package_name}/${version}/json" || true)"
+          case "$pypi_status" in
+            200)
+              published=true
+              ;;
+            404)
+              published=false
+              ;;
+            *)
+              echo "Unexpected PyPI response for ${package_name} ${version}: ${pypi_status}" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "package_name=$package_name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "tag_exists=$tag_exists" >> "$GITHUB_OUTPUT"
+          echo "published=$published" >> "$GITHUB_OUTPUT"
+
+      - name: Build package
+        if: steps.release.outputs.published == 'false'
+        run: uv build
+
+      - name: Publish to PyPI
+        if: steps.release.outputs.published == 'false'
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+        run: uv publish dist/*
+
+      - name: Create release tag
+        if: steps.release.outputs.tag_exists == 'false'
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Skip existing release
+        if: steps.release.outputs.published == 'true'
+        env:
+          PACKAGE_NAME: ${{ steps.release.outputs.package_name }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: echo "${PACKAGE_NAME} ${VERSION} is already published on PyPI; skipping publish."
