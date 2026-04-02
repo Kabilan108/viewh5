@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from viewh5.app import HDF5ViewerApp
+
+
+@pytest.fixture(autouse=True)
+def force_snapshot_no_color(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
 
 
 def test_snapshot_initial(snapshot_hdf5_file: Path, snap_compare) -> None:
