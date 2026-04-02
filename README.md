@@ -19,7 +19,7 @@ Or install the latest version directly from GitHub:
 uv tool install --from git+https://github.com/kabilan108/viewh5 viewh5
 ```
 
-Run it with `viewh5 path/to/file.h5`.
+Run it with `viewh5 open path/to/file.h5`.
 
 For a non-interactive summary, use:
 
@@ -48,7 +48,7 @@ ya pkg add yazi-rs/plugins:piper
 ```toml
 [opener]
 h5 = [
-  { run = 'viewh5 "$@"', block = true, desc = "View HDF5 file" },
+  { run = 'viewh5 open "$@"', block = true, desc = "View HDF5 file" },
 ]
 
 [open]
@@ -82,7 +82,7 @@ programs.yazi = {
   settings = {
     opener = {
       h5 = [
-        { run = ''viewh5 "$@"''; block = true; desc = "View HDF5 file"; }
+        { run = ''viewh5 open "$@"''; block = true; desc = "View HDF5 file"; }
       ];
     };
     open = {
@@ -112,7 +112,7 @@ uv sync
 uv run pytest
 uv run ruff check
 uv run ty check
-uv run viewh5 data/1520.h5
+uv run viewh5 open data/1520.h5
 vhs assets/viewh5-demo.tape
 ```
 

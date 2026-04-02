@@ -7,7 +7,7 @@ import pytest
 from viewh5 import cli
 
 
-def test_main_runs_tui_for_plain_file_argument(
+def test_main_runs_tui_for_open_command(
     sample_hdf5_file: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -22,7 +22,7 @@ def test_main_runs_tui_for_plain_file_argument(
 
     monkeypatch.setattr(cli, "HDF5ViewerApp", FakeApp)
 
-    assert cli.main([str(sample_hdf5_file)]) == 0
+    assert cli.main(["open", str(sample_hdf5_file)]) == 0
     assert calls == {
         "path": sample_hdf5_file.resolve(),
         "ran": True,
@@ -56,3 +56,35 @@ def test_main_describe_rejects_non_positive_dimensions(
     captured = capsys.readouterr()
     assert error.value.code == 2
     assert "must be greater than zero" in captured.err
+
+
+def test_main_help_uses_plain_click_format(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["--help"]) == 0
+
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    assert "Usage: viewh5 [OPTIONS] COMMAND [ARGS]..." in captured.out
+    assert "Commands:" in captured.out
+    assert "describe" in captured.out
+    assert "open" in captured.out
+    assert "╭" not in captured.out
+    assert "--install-completion" in captured.out
+    assert "--show-completion" in captured.out
+
+
+def test_open_help_uses_plain_click_format(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["open", "--help"]) == 0
+
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    assert "Usage: viewh5 open [OPTIONS] PATH" in captured.out
+    assert "╭" not in captured.out
+
+
+def test_describe_help_uses_plain_click_format(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["describe", "--help"]) == 0
+
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    assert "Usage: viewh5 describe [OPTIONS] PATH" in captured.out
+    assert "╭" not in captured.out

@@ -1,12 +1,13 @@
 [project]
 name = "viewh5"
-version = "0.2.0"
+version = "0.2.1"
 description = "Read-only Textual viewer for HDF5 files"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "h5py",
     "textual>=8.1.1",
+    "typer>=0.24.1",
 ]
 
 [project.scripts]

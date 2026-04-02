@@ -1,87 +1,136 @@
 from __future__ import annotations
 
-import argparse
-import sys
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from typing import Annotated
 
+import click
 import h5py
+import typer
 
 from viewh5.app import HDF5ViewerApp
 from viewh5.describe import DescribeOptions, describe_file
 from viewh5.model import HDF5Model
 
+APP_NAME = "viewh5"
 
-def main(argv: list[str] | None = None) -> int:
-    args = list(sys.argv[1:] if argv is None else argv)
-    if args and args[0] == "describe":
-        return _describe_main(args[1:])
 
-    parser = argparse.ArgumentParser(prog="viewh5")
-    parser.add_argument("path", help="Path to a local HDF5 file")
-    parsed = parser.parse_args(args)
-    path = _validate_path(parsed.path)
-    if path is None:
-        return 2
+def _validate_path(path_arg: Path) -> Path:
+    path = path_arg.expanduser()
+    if not path.exists():
+        raise typer.BadParameter(f"{path} does not exist")
+    if not path.is_file():
+        raise typer.BadParameter(f"{path} is not a file")
 
-    app = HDF5ViewerApp(path.resolve())
-    app.run()
+    try:
+        with h5py.File(path, "r"):
+            pass
+    except OSError as error:
+        raise typer.BadParameter(str(error)) from error
+    return path
+
+
+def _positive_int(value: int | None) -> int | None:
+    if value is None:
+        return None
+    if value <= 0:
+        raise typer.BadParameter("must be greater than zero")
+    return value
+
+
+app = typer.Typer(
+    rich_markup_mode=None,
+    pretty_exceptions_enable=False,
+)
+
+
+@app.command("open")
+def open_command(
+    path: Annotated[
+        Path,
+        typer.Argument(
+            metavar="PATH",
+            callback=_validate_path,
+        ),
+    ],
+) -> int:
+    viewer = HDF5ViewerApp(path.resolve())
+    viewer.run()
     return 0
 
 
-def _describe_main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(prog="viewh5 describe")
-    parser.add_argument("path", help="Path to a local HDF5 file")
-    parser.add_argument("--width", type=_positive_int, default=None)
-    parser.add_argument("--height", type=_positive_int, default=None)
-    parser.add_argument("--max-depth", type=_positive_int, default=3)
-    parser.add_argument("--max-children", type=_positive_int, default=25)
-    parser.add_argument("--max-attrs", type=_positive_int, default=6)
-    parser.add_argument("--preview-rows", type=_positive_int, default=4)
-    parser.add_argument("--preview-columns", type=_positive_int, default=6)
-    parsed = parser.parse_args(argv)
-
-    path = _validate_path(parsed.path)
-    if path is None:
-        return 2
-
+@app.command()
+def describe(
+    path: Annotated[
+        Path,
+        typer.Argument(
+            metavar="PATH",
+            callback=_validate_path,
+        ),
+    ],
+    width: Annotated[
+        int | None,
+        typer.Option(callback=_positive_int),
+    ] = None,
+    height: Annotated[
+        int | None,
+        typer.Option(callback=_positive_int),
+    ] = None,
+    max_depth: Annotated[
+        int,
+        typer.Option("--max-depth", callback=_positive_int),
+    ] = 3,
+    max_children: Annotated[
+        int,
+        typer.Option("--max-children", callback=_positive_int),
+    ] = 25,
+    max_attrs: Annotated[
+        int,
+        typer.Option("--max-attrs", callback=_positive_int),
+    ] = 6,
+    preview_rows: Annotated[
+        int,
+        typer.Option("--preview-rows", callback=_positive_int),
+    ] = 4,
+    preview_columns: Annotated[
+        int,
+        typer.Option("--preview-columns", callback=_positive_int),
+    ] = 6,
+) -> int:
     model = HDF5Model(path)
     print(
         describe_file(
             model,
             DescribeOptions(
-                width=parsed.width,
-                height=parsed.height,
-                max_depth=parsed.max_depth,
-                max_children=parsed.max_children,
-                max_attrs=parsed.max_attrs,
-                preview_rows=parsed.preview_rows,
-                preview_columns=parsed.preview_columns,
+                width=width,
+                height=height,
+                max_depth=max_depth,
+                max_children=max_children,
+                max_attrs=max_attrs,
+                preview_rows=preview_rows,
+                preview_columns=preview_columns,
             ),
         )
     )
     return 0
 
 
-def _validate_path(path_arg: str) -> Path | None:
-    path = Path(path_arg).expanduser()
-    if not path.exists():
-        print(f"error: {path} does not exist", file=sys.stderr)
-        return None
-    if not path.is_file():
-        print(f"error: {path} is not a file", file=sys.stderr)
-        return None
-
+@app.command("version")
+def version_command() -> int:
     try:
-        with h5py.File(path, "r"):
-            pass
-    except OSError as error:
-        print(f"error: {error}", file=sys.stderr)
-        return None
-    return path
+        print(version(APP_NAME))
+    except PackageNotFoundError:
+        print("unknown")
+    return 0
 
 
-def _positive_int(value: str) -> int:
-    parsed = int(value)
-    if parsed <= 0:
-        raise argparse.ArgumentTypeError("must be greater than zero")
-    return parsed
+def main(argv: list[str] | None = None) -> int:
+    try:
+        result = app(args=argv, prog_name=APP_NAME, standalone_mode=False)
+    except click.Abort:
+        click.echo("Aborted!", err=True)
+        raise SystemExit(1) from None
+    except click.ClickException as error:
+        error.show()
+        raise SystemExit(error.exit_code) from None
+    return 0 if result is None else int(result)
