@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.13"
 
 [options]
-exclude-newer = "2026-03-25T19:17:42.349619241Z"
+exclude-newer = "2026-03-26T01:34:48.95405208Z"
 exclude-newer-span = "P7D"
 
 [[package]]
@@ -885,7 +885,7 @@ wheels = [
 
 [[package]]
 name = "viewh5"
-version = "0.1.1"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "h5py" },
