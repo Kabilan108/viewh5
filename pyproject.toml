@@ -9,6 +9,7 @@ dependencies = [
     "pillow>=12.2.0",
     "textual>=8.1.1",
     "typer>=0.24.1",
+    "Pygments>=2.20.0",
 ]
 
 [project.scripts]
@@ -17,7 +18,6 @@ viewh5 = "viewh5.cli:main"
 [dependency-groups]
 dev = [
     "ipython-icat>=0.4.1",
-    "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
     "pytest-textual-snapshot>=1.0.0",
     "ruff>=0.15.7",
