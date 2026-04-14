@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "h5py",
+    "pillow>=12.2.0",
     "textual>=8.1.1",
     "typer>=0.24.1",
 ]
