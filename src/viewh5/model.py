@@ -279,6 +279,8 @@ class HDF5Model:
     def _is_supported_dtype(self, dtype: np.dtype[Any]) -> bool:
         if dtype.fields is not None:
             return False
+        if h5py.check_string_dtype(dtype) is not None:
+            return True
         if h5py.check_vlen_dtype(dtype) is not None:
             return False
         if h5py.check_enum_dtype(dtype) is not None:

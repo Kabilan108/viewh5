@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import h5py
+import numpy as np
+
 from viewh5.model import COLUMN_PAGE_SIZE_2D, HDF5Model, ROW_PAGE_SIZE_1D
 
 
@@ -75,6 +78,42 @@ def test_blocked_preview_requires_force(sample_hdf5_file: Path) -> None:
     assert preview.kind == "blocked"
     assert forced_preview.kind == "table_1d"
     assert len(forced_preview.rows) == ROW_PAGE_SIZE_1D
+
+
+def test_vlen_string_bytes_preview_is_decoded(tmp_path: Path) -> None:
+    path = tmp_path / "strings.h5"
+    with h5py.File(path, "w") as handle:
+        handle.create_dataset(
+            "byte_strings",
+            data=[b"alpha", b"beta", b"gamma"],
+            dtype=h5py.string_dtype(encoding="utf-8"),
+        )
+
+    model = HDF5Model(path)
+    summary = model.get_summary("/byte_strings")
+    preview = model.get_preview("/byte_strings")
+
+    assert summary.preview_risk == "safe"
+    assert preview.kind == "table_1d"
+    assert preview.columns == ["index", "value"]
+    assert preview.rows == [["0", "alpha"], ["1", "beta"], ["2", "gamma"]]
+    assert preview.total_rows == 3
+
+
+def test_non_string_vlen_preview_stays_unsupported(tmp_path: Path) -> None:
+    path = tmp_path / "ragged.h5"
+    with h5py.File(path, "w") as handle:
+        dataset = np.empty(2, dtype=object)
+        dataset[0] = np.array([1, 2], dtype=np.int32)
+        dataset[1] = np.array([3], dtype=np.int32)
+        handle.create_dataset("ragged", data=dataset, dtype=h5py.vlen_dtype(np.dtype("int32")))
+
+    model = HDF5Model(path)
+    summary = model.get_summary("/ragged")
+    preview = model.get_preview("/ragged")
+
+    assert summary.preview_risk == "unsupported"
+    assert preview.kind == "unsupported"
 
 
 def test_search_index_contains_paths(sample_hdf5_file: Path) -> None:
