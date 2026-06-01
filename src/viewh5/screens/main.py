@@ -26,6 +26,7 @@ class MainScreen(Screen[None]):
         Binding("/", "open_search", "Search", show=True),
         Binding("r", "reload_file", "Reload", show=True),
         Binding("p", "force_preview", "Preview", show=True),
+        Binding("a", "toggle_attributes", "Attrs", show=False),
     ]
 
     CSS = """
@@ -78,6 +79,7 @@ class MainScreen(Screen[None]):
         self.preview_force = False
         self.selected_row_offset = 0
         self.selected_column_offset = 0
+        self.show_all_attrs = False
 
     def compose(self) -> ComposeResult:
         yield Static(id="status-bar")
@@ -130,6 +132,7 @@ class MainScreen(Screen[None]):
         self.selected_row_offset = 0
         self.selected_column_offset = 0
         self.preview_force = False
+        self.show_all_attrs = False
         self._apply_summary(root_summary)
         self._apply_preview(
             PreviewPage(
@@ -168,10 +171,13 @@ class MainScreen(Screen[None]):
         row_offset: int = 0,
         column_offset: int = 0,
     ) -> None:
+        previous_path = self.current_path
         self.current_path = path
         self.preview_force = force_preview
         self.selected_row_offset = row_offset
         self.selected_column_offset = column_offset
+        if path != previous_path:
+            self.show_all_attrs = False
 
         try:
             summary = await asyncio.to_thread(self.model.get_summary, path)
@@ -321,6 +327,12 @@ class MainScreen(Screen[None]):
             column_offset=self.selected_column_offset,
         )
 
+    def action_toggle_attributes(self) -> None:
+        if self.current_summary is None or len(self.current_summary.attrs) <= 1:
+            return
+        self.show_all_attrs = not self.show_all_attrs
+        self.summary_panel.show_summary(self.current_summary, show_all_attrs=self.show_all_attrs)
+
     async def reveal_path(self, path: str) -> None:
         if path == "/":
             self.tree.move_cursor(self.tree.root, animate=False)
@@ -341,6 +353,7 @@ class MainScreen(Screen[None]):
         self.tree.move_cursor(current, animate=False)
         self.tree.focus()
         self.preview_force = False
+        self.show_all_attrs = False
         self.selected_row_offset = 0
         self.selected_column_offset = 0
         self.load_selection(path)
@@ -365,7 +378,7 @@ class MainScreen(Screen[None]):
 
     def _apply_summary(self, summary: H5ObjectSummary) -> None:
         self.current_summary = summary
-        self.summary_panel.show_summary(summary)
+        self.summary_panel.show_summary(summary, show_all_attrs=self.show_all_attrs)
 
     def _apply_preview(self, preview: PreviewPage) -> None:
         self.current_preview = preview

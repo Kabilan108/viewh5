@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
+import h5py
 import pytest
 
 from viewh5.app import HDF5ViewerApp
@@ -10,6 +11,7 @@ from viewh5.screens.main import MainScreen
 from viewh5.types import PreviewPage
 from viewh5.widgets.object_tree import ObjectTree
 from viewh5.widgets.preview_table import PreviewTable
+from viewh5.widgets.summary_panel import DEFAULT_SUMMARY_HEIGHT, SummaryPanel
 from textual.widgets import Static
 
 
@@ -104,8 +106,69 @@ async def test_search_jumps_to_path(sample_hdf5_file: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_attributes_are_truncated_with_toggle_hint(tmp_path: Path) -> None:
+    path = _multi_attr_file(tmp_path)
+
+    async with HDF5ViewerApp(path).run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("j")
+        await pilot.pause()
+        panel = pilot.app.screen.query_one(SummaryPanel)
+        content = _summary_text(panel)
+
+        assert "alpha: one" in content
+        assert "beta: two" not in content
+        assert "... 4 more attribute(s); press a to show all" in content
+        assert _panel_height(panel) == DEFAULT_SUMMARY_HEIGHT
+
+
+@pytest.mark.asyncio
+async def test_attribute_toggle_expands_full_list(tmp_path: Path) -> None:
+    path = _multi_attr_file(tmp_path)
+
+    async with HDF5ViewerApp(path).run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("j")
+        await pilot.pause()
+        await pilot.press("a")
+        await pilot.pause()
+        panel = pilot.app.screen.query_one(SummaryPanel)
+        content = _summary_text(panel)
+
+        assert "alpha: one" in content
+        assert "beta: two" in content
+        assert "gamma: three" in content
+        assert "delta: four" in content
+        assert "epsilon: five" in content
+        assert "showing all attributes; press a to collapse" in content
+        assert _panel_height(panel) > DEFAULT_SUMMARY_HEIGHT
+
+
+@pytest.mark.asyncio
 async def test_status_bar_uses_relative_path_for_files_under_cwd(snapshot_hdf5_file: Path) -> None:
     async with HDF5ViewerApp(snapshot_hdf5_file).run_test() as pilot:
         await pilot.pause()
         status_bar = pilot.app.screen.query_one("#status-bar", Static)
         assert "tests/.snapshot-fixtures/sample.h5" in str(status_bar.content)
+
+
+def _multi_attr_file(tmp_path: Path) -> Path:
+    path = tmp_path / "attrs.h5"
+    with h5py.File(path, "w") as handle:
+        group = handle.create_group("group")
+        group.attrs["alpha"] = "one"
+        group.attrs["beta"] = "two"
+        group.attrs["gamma"] = "three"
+        group.attrs["delta"] = "four"
+        group.attrs["epsilon"] = "five"
+    return path
+
+
+def _summary_text(panel: SummaryPanel) -> str:
+    content = cast(Any, panel.content)
+    return "\n".join(str(renderable) for renderable in content.renderables)
+
+
+def _panel_height(panel: SummaryPanel) -> int:
+    height = cast(Any, panel.styles.height)
+    return int(height.value)
