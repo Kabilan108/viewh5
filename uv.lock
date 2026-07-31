@@ -933,6 +933,7 @@ name = "viewh5"
 version = "0.3.1"
 source = { editable = "." }
 dependencies = [
+    { name = "click" },
     { name = "h5py" },
     { name = "pillow" },
     { name = "pygments" },
@@ -951,11 +952,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "click", specifier = ">=8.2.1" },
     { name = "h5py" },
     { name = "pillow", specifier = ">=12.2.0" },
     { name = "pygments", specifier = ">=2.20.0" },
     { name = "textual", specifier = ">=8.1.1" },
-    { name = "typer", specifier = ">=0.24.1" },
+    { name = "typer", specifier = ">=0.24.1,<0.26" },
 ]
 
 [package.metadata.requires-dev]

@@ -58,6 +58,18 @@ def test_main_describe_rejects_non_positive_dimensions(
     assert "must be greater than zero" in captured.err
 
 
+def test_main_missing_command_renders_usage_error(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as error:
+        cli.main([])
+
+    captured = capsys.readouterr()
+    assert error.value.code == 2
+    assert captured.out == ""
+    assert "Usage: viewh5 [OPTIONS] COMMAND [ARGS]..." in captured.err
+    assert "Error: Missing command." in captured.err
+    assert "Traceback" not in captured.err
+
+
 def test_main_help_uses_plain_click_format(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["--help"]) == 0
 
