@@ -7,6 +7,8 @@ Read-only, keyboard-first HDF5 viewer built with Textual.
 
 ![viewh5 demo](assets/viewh5-demo.gif)
 
+viewh5 is for looking inside HDF5 files where they live, usually on a remote machine over SSH. It installs without root, runs in any terminal, and reads only metadata at startup, so large files open quickly. You browse groups with vim-style keys, page through dataset previews, inspect attributes, and press `/` to search the whole file.
+
 ## Install
 
 ```bash
@@ -104,6 +106,16 @@ programs.yazi = {
 ```
 
 After rebuilding Home Manager, `open` on an HDF5 file will launch the full Textual app and hovering an HDF5 file will show the text summary in Yazi's preview pane.
+
+## Similar Tools
+
+- [h5v](https://github.com/DanielHauge/h5v): Rust TUI with charts, heatmaps, image previews, and attribute editing.
+- [h5forest](https://pypi.org/project/h5forest/): Python TUI aimed at large, deeply nested files.
+- [h5tui](https://github.com/kszenes/h5tui): TUI with in-terminal plots via plotext.
+- [HDFView](https://www.hdfgroup.org/downloads/hdfview/) and [myHDF5](https://myhdf5.hdfgroup.org/): the HDF Group's desktop and browser viewers.
+- `h5ls` and `h5dump`: the command-line tools that ship with HDF5.
+
+viewh5 stays read-only and keeps its scope small: fast browsing, a scriptable `describe` summary, and file manager previews.
 
 ## Development
 
